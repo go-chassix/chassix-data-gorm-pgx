@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"sync"
+	"time"
 
 	pg "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,6 +33,15 @@ func (p PostgresProvider) Connect(config *gormx.DatabaseConfig) (*gorm.DB, error
 			if db, err := gorm.Open(pg.New(pg.Config{Conn: sqlDB}), &gorm.Config{
 				Logger: gormx.DefaultLogger(&config.Logger),
 			}); err == nil {
+				if config.MaxIdle > 0 {
+					sqlDB.SetMaxIdleConns(config.MaxIdle)
+				}
+				if config.MaxOpen > 0 && config.MaxOpen > config.MaxIdle {
+					sqlDB.SetMaxOpenConns(100)
+				}
+				if config.MaxLifetime > 0 {
+					sqlDB.SetConnMaxLifetime(time.Duration(config.MaxLifetime) * time.Second)
+				}
 				return db, nil
 			}
 		} else {
