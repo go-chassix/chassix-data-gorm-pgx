@@ -27,7 +27,9 @@ type PostgresProvider struct {
 //Connect impl DatabaseProvider for gorm postgres
 func (p PostgresProvider) Connect(config *gormx.DatabaseConfig) (*gorm.DB, error) {
 	if config.Dialect == gormx.DriverPostgres {
-		if db, err := gorm.Open(pg.New(pg.Config{DSN: config.DSN}), &gorm.Config{}); err == nil {
+		if db, err := gorm.Open(pg.New(pg.Config{DSN: config.DSN}), &gorm.Config{
+			Logger: gormx.DefaultLogger(&config.Logger),
+		}); err == nil {
 			return db, nil
 		} else {
 			log.Errorf("connect db failed: error=%s", err.Error())
