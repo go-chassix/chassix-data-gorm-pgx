@@ -1,7 +1,6 @@
 package data_gorm_pgx
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
 	"time"
@@ -29,10 +28,10 @@ type PostgresProvider struct {
 //Connect impl DatabaseProvider for gorm postgres
 func (p PostgresProvider) Connect(config *gormx.DatabaseConfig) (*gorm.DB, error) {
 	if config.Dialect == gormx.DriverPostgres {
-		if sqlDB, err := sql.Open("postgres", config.DSN); err == nil {
-			if db, err := gorm.Open(pg.New(pg.Config{Conn: sqlDB}), &gorm.Config{
-				Logger: gormx.DefaultLogger(&config.Logger),
-			}); err == nil {
+		if db, err := gorm.Open(pg.New(pg.Config{DSN: config.DSN}), &gorm.Config{
+			Logger: gormx.DefaultLogger(&config.Logger),
+		}); err == nil {
+			if sqlDB, err := db.DB(); err == nil {
 				if config.MaxIdle > 0 {
 					sqlDB.SetMaxIdleConns(config.MaxIdle)
 				}
@@ -43,11 +42,13 @@ func (p PostgresProvider) Connect(config *gormx.DatabaseConfig) (*gorm.DB, error
 					sqlDB.SetConnMaxLifetime(time.Duration(config.MaxLifetime) * time.Second)
 				}
 				return db, nil
+			} else {
+				return nil, errors.New("open DB failed")
 			}
 		} else {
 			log.Errorf("connect db failed: error=%s", err.Error())
 		}
-		return nil, errors.New("open DB failed")
+		return nil, errors.New("connect db failed")
 	}
 	return nil, errors.New("driver is not postgres")
 }
